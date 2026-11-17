@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Air Leak Report Builder</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<title>Leak Report Builder</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 :root{--bg:#f3f6f5;--pn:#fff;--tx:#1b2a26;--mu:#5c6b66;--bd:#cdd8d4;--ac:#109B7E;--in:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -36,7 +37,7 @@ table.s .sn{width:150px;overflow:hidden;white-space:nowrap;text-overflow:ellipsi
 .ft{position:absolute;left:38px;right:38px;bottom:14px;display:flex;justify-content:space-between;font-size:9px}
 @media print{@page{size:A4;margin:0}.ui .no{display:none!important}.ui{max-width:none;padding:0}#wrap{overflow:visible;padding:0}.page{margin:0;box-shadow:none;page-break-after:always}body{background:#fff}}
 </style></head><body><div class="ui">
-<div class="no"><h1>Air Leak Report Builder</h1><div class="mu">Load the journal (XML) files and the photo folders, edit the variables, then download the PDF. Everything runs in your browser; no file is uploaded.</div>
+<div class="no"><h1>Leak Report Builder</h1><div class="mu">Load the journal (XML) files and the photo folders, edit the variables, then download the PDF. Everything runs in your browser; no file is uploaded.</div>
 <div class="pn"><h2>1. Select Files and Company</h2><div class="g">
 <div><label>Journal folder (XML files + all photo folders)</label><input type="file" id="fd" webkitdirectory multiple></div>
 <div><label>Or Journal.zip / one or more XML files</label><input type="file" id="ff" accept=".xml,.zip" multiple></div>
@@ -146,11 +147,16 @@ function build(){$('#lp').src=LOGO;$('#air').textContent=fmt(air(),2)+' BDT / 1,
  $('#rep').innerHTML=p.map((h,i)=>`<div class="page">${h}<div class="ft"><span>${esc(M.foot)}</span><span>Page ${i+1} / ${p.length}</span></div></div>`).join('');
  $('#pdf').disabled=$('#pr').disabled=false;$('#ps').textContent='Report ready: '+p.length+' pages'}
 $('#pr').onclick=()=>window.print();
-$('#pdf').onclick=async()=>{const b=$('#pdf'),pg=[...document.querySelectorAll('.page')];b.disabled=true;$('#ps').textContent='Creating PDF… this may take a moment';
- try{const o={margin:0,image:{type:'jpeg',quality:.9},html2canvas:{scale:1.6,backgroundColor:'#fff'},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}};
-  let w=html2pdf().set(o).from(pg[0]);for(let i=1;i<pg.length;i++)w=w.toPdf().get('pdf').then(d=>d.addPage()).from(pg[i]).toContainer().toCanvas().toPdf();
-  const blob=await w.outputPdf('blob'),name=(M.company||'Leak_Report').replace(/[^\w]+/g,'_')+'_Leak_Report.pdf',dl=await window.claude?.use?.('downloads');
-  if(dl){await dl.save({filename:name,data:blob});$('#ps').textContent='PDF ready'}else{const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;a.click();$('#ps').textContent='If the download does not start, use "Print / Save as PDF"'}}
- catch(e){$('#ps').textContent=(e&&e.code=='declined')?'Download cancelled':'PDF could not be created; use "Print / Save as PDF"'}b.disabled=false};
+$('#pdf').onclick=async()=>{const b=$('#pdf'),pg=[...document.querySelectorAll('.page')],st=$('#ps');b.disabled=true;
+ const box=document.createElement('div');box.style.cssText='position:absolute;left:-10000px;top:0;width:794px;background:#fff';document.body.appendChild(box);
+ try{const doc=new window.jspdf.jsPDF({unit:'mm',format:'a4',orientation:'portrait',compress:true});
+  for(let i=0;i<pg.length;i++){st.textContent=`Creating PDF… page ${i+1} / ${pg.length}`;await new Promise(r=>setTimeout(r,0));
+   const c=pg[i].cloneNode(true);c.style.margin='0';c.style.boxShadow='none';box.innerHTML='';box.appendChild(c);
+   const cv=await html2canvas(c,{scale:1.6,backgroundColor:'#ffffff',useCORS:true,logging:false,width:794,height:1122,windowWidth:794,windowHeight:1122,scrollX:0,scrollY:0});
+   if(i)doc.addPage('a4','portrait');doc.addImage(cv.toDataURL('image/jpeg',.88),'JPEG',0,0,210,297,undefined,'FAST')}
+  const blob=doc.output('blob'),name=(M.company||'Leak_Report').replace(/[^\w]+/g,'_')+'_Leak_Report.pdf',dl=await window.claude?.use?.('downloads');
+  if(dl){await dl.save({filename:name,data:blob});st.textContent='PDF ready'}else{const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),60000);st.textContent='PDF ready ('+pg.length+' pages, A4)'}}
+ catch(e){st.textContent=(e&&e.code=='declined')?'Download cancelled':'PDF could not be created; use "Print / Save as PDF"'}
+ box.remove();b.disabled=false};
 build();
 </script></body></html>
