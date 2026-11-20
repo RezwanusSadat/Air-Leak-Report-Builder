@@ -47,7 +47,7 @@ table.s .sn{width:150px;overflow:hidden;white-space:nowrap;text-overflow:ellipsi
 <div id="st" class="mu" style="margin-top:8px">Load files to get the company list; choosing a company loads its leak data.</div></div>
 <div class="pn"><h2>2. Report Type</h2><div class="bar"><label style="display:flex;gap:6px;align-items:center;font-size:14px;color:var(--tx)"><input type="radio" name="mode" value="air" checked style="width:auto"> Air Leakage</label>
 <label style="display:flex;gap:6px;align-items:center;font-size:14px;color:var(--tx)"><input type="radio" name="mode" value="steam" style="width:auto"> Steam Leakage</label></div></div>
-<div class="pn"><h2>3. Factory Information (common to Air and Steam)</h2><div class="g" id="mf"></div>
+<div class="pn"><h2>3. Factory Information</h2><div class="g" id="mf"></div>
 <div class="g" style="margin-top:10px"><div><label>Logo (optional; auto-cropped and auto-sized)</label><input type="file" id="lg" accept="image/*"></div><div style="align-self:end"><label>Logo preview</label><img id="lp" alt="" style="max-height:48px;max-width:220px;object-fit:contain;background:#fff;border:1px solid var(--bd);border-radius:6px;padding:4px;display:block"></div></div></div>
 <div class="pn"><h2 id="ph">4. Air Parameters</h2><div class="g" id="pf"></div><div class="mu" id="nt" style="margin-top:8px"></div></div>
 <div class="pn"><h2>5. Leak List</h2><div class="mu" style="margin-bottom:6px">Each leak is Air or Steam. The report shows only the leaks of the selected report type. <b id="tc"></b></div>
@@ -65,7 +65,7 @@ const M={company:'',loc:'',hpd:24,dpy:350,imp:`${pad(td.getDate())}.${pad(td.get
 let MODE='air';Object.assign(M,{sgp:26.09,srt:12.95,sgcv:38.26,spr:7,pm:false,sco2:2.02});
 const FL=[['imp','Import Date','t'],['hpd','Working Hours per Day','n'],['dpy','Working Days per Year','n'],['audName','Auditor (Audit Company)','t'],['audAddr','Auditor Address','t'],['audContact','Auditor Name','t'],['audEmail','Auditor Email','t'],['audPhone','Auditor Phone','t']];
 const FA=[['co2','CO2 Emission (kg/kWh)','n'],['sp','Specific Power (kWh/m³)','n'],['er','Electricity Rate (BDT/kWh)','n']];
-const FS=[['sgp','Natural Gas Price (BDT/m³)','n'],['srt','Steam-to-Fuel Ratio (kg steam / m³ gas)','n'],['spr','Steam Pressure (bar gauge), used in Manual mode','n'],['sco2','CO2 Emission (kg CO2 / m³ gas)','n']];
+const FS=[['sgp','Natural Gas Price (BDT/m³)','n'],['srt','Steam-to-Fuel Ratio (kg steam / m³ gas)','n'],['spr','Steam Pressure (bar)','n'],['sco2','CO2 Emission (kg CO2 / m³ gas)','n']];
 let L=[];const IMG={};
 const fld=a=>a.map(([k,l,t])=>`<div><label>${l}</label><input data-k="${k}" ${t=='n'?'type="number" step="any"':''} value="${esc(M[k])}"></div>`).join('');
 function forms(){$('#mf').innerHTML=fld(FL);$('#pf').innerHTML=MODE=='air'?fld(FA):fld(FS.slice(0,2))+`<div><label>Steam Pressure source</label><select id="pm"><option value="0"${M.pm?'':' selected'}>From journal (each leak's own pressure)</option><option value="1"${M.pm?' selected':''}>Manual (one value for all leaks)</option></select></div>`+fld(FS.slice(2));$('#ph').textContent=MODE=='air'?'4. Air Parameters':'4. Steam Parameters'}
