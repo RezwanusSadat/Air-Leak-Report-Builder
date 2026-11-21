@@ -35,11 +35,13 @@ table.s .sn{width:150px;overflow:hidden;white-space:nowrap;text-overflow:ellipsi
 .k2{display:grid;row-gap:5px;align-content:start}.ph{grid-column:3;grid-row:1/3;text-align:right}.ph img{width:264px;height:198px;object-fit:cover;display:block}
 .ph small{color:#666;font-style:italic;font-size:9px}.cm{grid-column:1/4;padding-top:4px}
 .ft{position:absolute;left:38px;right:38px;bottom:14px;display:flex;justify-content:space-between;font-size:9px}
-.hero{position:relative;display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:16px 18px;border:1px solid var(--bd);border-radius:14px;overflow:hidden;background:linear-gradient(110deg,rgba(16,155,126,.2),rgba(16,155,126,.04) 70%),var(--pn)}
+.hero{position:relative;display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:16px 18px;border:1px solid var(--bd);border-radius:14px;overflow:hidden;background:linear-gradient(110deg,rgba(255,255,255,.38),rgba(232,246,241,.12));backdrop-filter:blur(3px);border-color:rgba(16,155,126,.3)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .hero{background:linear-gradient(110deg,rgba(255,255,255,.86),rgba(232,246,241,.74));backdrop-filter:blur(7px)}}
+:root[data-theme="dark"] .hero{background:linear-gradient(110deg,rgba(255,255,255,.86),rgba(232,246,241,.74));backdrop-filter:blur(7px)}
 .hero img{height:44px;width:auto;position:relative}.hero>div{position:relative;max-width:560px}.hero h1{margin:0 0 2px}.hero .pp{position:absolute;right:0;bottom:0;height:100%;opacity:.5}
 .pt{animation:rise 2.4s linear infinite;transform-box:fill-box}@keyframes rise{0%{transform:translate(0,0);opacity:.9}100%{transform:translate(8px,-36px);opacity:0}}
 .pn{backdrop-filter:blur(3px)}#c2{position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none}
-.hero a{display:block;position:relative;background:rgba(255,255,255,.95);border-radius:10px;padding:6px 12px;box-shadow:0 2px 10px rgba(0,0,0,.14)}.hero a img{transition:transform .3s}.hero a:hover img{transform:scale(1.06)}
+.hero a{display:block;position:relative}.hero .mu{color:#3f6158}.hero h1{color:#0b6b58}.hero a img{transition:transform .3s}.hero a:hover img{transform:scale(1.06)}
 #sp .hud{position:absolute;top:14px;left:50%;transform:translateX(-50%);display:flex;gap:14px;background:rgba(255,255,255,.75);border:1px solid rgba(16,155,126,.35);border-radius:999px;padding:6px 16px;font:600 13px system-ui,Arial,sans-serif;color:#0b6b58;backdrop-filter:blur(4px);white-space:nowrap;animation:up .8s 1.2s both}
 #sp .hint{font-size:12px;color:#5d7a73;margin:0;max-width:300px;animation:up .8s 1.4s both}
 @keyframes pulse{50%{transform:scale(1.12)}}#sp.ready #go{animation:pulse 1s ease-in-out infinite}
@@ -57,7 +59,7 @@ body:not(.rdy) .ui{opacity:0}.ui{transition:opacity .9s .2s}
 .seg[data-m=air] label:nth-of-type(1) svg{animation:sway 2.4s ease-in-out infinite}.seg[data-m=steam] label:nth-of-type(2) svg{animation:bob 2s ease-in-out infinite}
 @keyframes sway{50%{transform:translateX(3px)}}@keyframes bob{50%{transform:translateY(-3px)}}
 #sp{position:fixed;inset:0;z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#0b3d33;text-align:center;padding:20px;overflow:hidden;
-background:radial-gradient(ellipse at 50% 38%,#e6f2ee 0,#c3ddd5 55%,#97c3b6 100%);transition:opacity .8s,transform .8s,visibility .8s}
+background:radial-gradient(ellipse at 50% 38%,#f1f7f5 0,#dbe9e5 55%,#bfd7cf 100%);transition:opacity .8s,transform .8s,visibility .8s}
 #sp.out{opacity:0;visibility:hidden;transform:scale(1.08)}
 #sp .bp{position:absolute;inset:0;background-image:linear-gradient(rgba(11,110,90,.17) 1px,transparent 1px),linear-gradient(90deg,rgba(11,110,90,.17) 1px,transparent 1px);background-size:36px 36px;-webkit-mask-image:radial-gradient(circle at 50% 45%,#000 20%,transparent 75%);mask-image:radial-gradient(circle at 50% 45%,#000 20%,transparent 75%)}
 #sp>*:not(.bp):not(.bp2):not(.hud){position:relative}#sp{touch-action:none}#sp .bp2{position:absolute;inset:0;width:100%;height:100%}
@@ -78,12 +80,12 @@ background:radial-gradient(ellipse at 50% 38%,#e6f2ee 0,#c3ddd5 55%,#97c3b6 100%
 #sp .db{font:600 15px/1.3 system-ui,Arial,sans-serif;color:#0b6b58;min-height:20px;animation:up .8s 1.3s both;font-variant-numeric:tabular-nums}#sp.hit .db{color:#e2692b}
 #sp #sk{background:none;color:#6c8a83;border:0;font-size:12px;padding:4px 10px;animation:up .8s 1.5s both}
 @media(prefers-reduced-motion:reduce){#sp,#sp *,.seg .th,.seg label,.seg svg,.fx{animation:none!important;transition:none!important}}@media print{#sp{display:none!important}@page{size:A4;margin:0}.ui .no{display:none!important}.ui{max-width:none;padding:0}#wrap{overflow:visible;padding:0}.page{margin:0;box-shadow:none;page-break-after:always}body{background:#fff}}
-</style></head><body><div id="sp"><div class="bp"></div><canvas class="bp2" id="c1"></canvas><div class="hud"><span id="hd1">Leaks found 0 / 4</span><span id="hd2">— dB</span></div><img id="sl" alt="Benchmark Solutions"><h1>Leak Report Builder</h1><p>Ultrasonic Air &amp; Steam Leakage Reports</p>
+</style></head><body><div id="sp"><canvas class="bp2" id="c1"></canvas><div class="hud"><span id="hd1">Leaks found 0 / 4</span><span id="hd2">— dB</span></div><img id="sl" alt="Benchmark Solutions"><h1>Leak Report Builder</h1><p>Ultrasonic Air &amp; Steam Leakage Reports</p>
 <svg class="pipe" viewBox="0 0 300 70" fill="none"><rect x="0" y="26" width="300" height="20" fill="#e3f0ec" stroke="#109B7E" stroke-width="2"/><rect x="92" y="18" width="9" height="36" rx="2" fill="#cfe5df" stroke="#109B7E" stroke-width="2"/><rect x="200" y="18" width="9" height="36" rx="2" fill="#cfe5df" stroke="#109B7E" stroke-width="2"/>
 <circle cx="40" cy="14" r="8" stroke="#109B7E" stroke-width="2"/><path d="M40 22v4M32 14h16" stroke="#109B7E" stroke-width="2"/><circle cx="262" cy="14" r="9" stroke="#109B7E" stroke-width="2"/><path d="M262 14l5-5" stroke="#109B7E" stroke-width="2"/>
 <g class="lk"><circle cx="150" cy="25" r="4.5" fill="#e2692b"/><g fill="#e2692b" stroke="none"><circle class="pt" cx="147" cy="22" r="2.6"/><circle class="pt" cx="153" cy="22" r="2.2" style="animation-delay:.7s"/><circle class="pt" cx="150" cy="22" r="1.9" style="animation-delay:1.4s"/></g></g></svg>
 <div class="sc"><i></i><i></i><i></i><button id="go" aria-label="Tap to detect the leak"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><path d="M12 12L18.5 5.5"/></svg></button></div>
-<div id="db" class="db">Tap the scanner to auto-scan every line</div><p class="hint">Or play: move the mouse (drag a finger) and tap the white glowing spots to tag hidden leaks.</p><button id="sk">Skip</button></div><canvas id="c2"></canvas>
+<div id="db" class="db">Tap the scanner to auto-scan every line</div><p class="hint">Or play: move the mouse (drag a finger) and tap the glowing blue spots to tag hidden leaks.</p><button id="sk">Skip</button></div><canvas id="c2"></canvas>
 <div class="ui">
 <div class="no"><div class="hero"><a href="https://www.ben-sol.net/" target="_blank" rel="noopener" title="Visit www.ben-sol.net"><img id="hl" alt="Benchmark Solutions"></a><div><h1>Leak Report Builder</h1><div class="mu">Load the journal (XML) files and the photo folders, edit the variables, then download the PDF. Everything runs in your browser; no file is uploaded.</div></div><svg class="pp" viewBox="0 0 260 90" fill="none" stroke="#0b7a64" stroke-width="2"><path d="M0 52H260M0 74H260"/><rect x="60" y="44" width="8" height="38" rx="2"/><rect x="180" y="44" width="8" height="38" rx="2"/><circle cx="120" cy="40" r="12"/><path d="M108 40h24M120 28v24M120 28v-8"/><circle cx="215" cy="24" r="16"/><path d="M215 24l8-8M215 10v4"/>
 <g stroke="none" fill="#e2692b"><circle class="pt" cx="150" cy="50" r="2.5"/><circle class="pt" cx="154" cy="50" r="2" style="animation-delay:.8s"/><circle class="pt" cx="147" cy="50" r="1.8" style="animation-delay:1.6s"/></g></svg></div>
@@ -254,7 +256,7 @@ function ind(cv,o){const x=cv.getContext('2d'),R=Math.random,TP=Math.PI*2;let W=
   if(o.hot){const ty=['air','air','steam','steam'].sort(()=>R()-.5);for(let i=0;i<4;i++){const k=Math.floor(R()*n);hs.push({x:W*(.12+.76*(i+R()*.6)/4),y:pipes[k].y1,k,f:false,type:ty[i]})}}
   api.hs=hs}
  const C=()=>dark?'110,220,196':'16,155,126';
- function pipesStroke(al,list,cc){list=list||pipes;cc=cc||C();x.strokeStyle=`rgba(${cc},${al})`;x.lineWidth=14;for(const p of list){x.beginPath();x.moveTo(p.x1,p.y1);x.lineTo(p.x2,p.y2);x.stroke()}x.globalCompositeOperation='destination-out';x.lineWidth=10;x.strokeStyle='#000';for(const p of list){x.beginPath();x.moveTo(p.x1,p.y1);x.lineTo(p.x2,p.y2);x.stroke()}x.globalCompositeOperation='source-over'}
+ function pipesStroke(al,list,cc){list=list||pipes;cc=cc||C();x.strokeStyle=`rgba(${cc},${al})`;x.lineWidth=14;for(const p of list){x.beginPath();x.moveTo(p.x1,p.y1);x.lineTo(p.x2,p.y2);x.stroke()}x.globalCompositeOperation='destination-out';x.lineWidth=10;x.strokeStyle='#000';for(const p of list){x.beginPath();x.moveTo(p.x1,p.y1);x.lineTo(p.x2,p.y2);x.stroke()}x.globalCompositeOperation='source-over';if(o.tube){x.lineWidth=10;x.strokeStyle='rgba(255,255,255,.62)';for(const p of list){x.beginPath();x.moveTo(p.x1,p.y1);x.lineTo(p.x2,p.y2);x.stroke()}}}
  function gear(g){x.save();x.translate(g.x,g.y);x.rotate(g.a);x.beginPath();for(let i=0;i<24;i++){const a=i/24*TP,r=g.r+(i%2?0:9);x.lineTo(Math.cos(a)*r,Math.sin(a)*r)}x.closePath();x.stroke();x.beginPath();x.arc(0,0,g.r*.45,0,TP);x.stroke();for(let i=0;i<3;i++){x.rotate(TP/3);x.beginPath();x.moveTo(g.r*.45,0);x.lineTo(g.r-2,0);x.stroke()}x.restore()}
  function detect(h){if(h.f)return;h.f=true;found++;rip.push({x:h.x,y:h.y,r:6,a:1,c:h.type=='steam'?'226,105,43':'0,184,148'});if(o.onFound)o.onFound(h,found,hs.length)}
  function draw(dt){x.clearRect(0,0,W,H);const A=o.alpha,c=C();x.lineCap='butt';pipesStroke(.2*A);
@@ -267,8 +269,8 @@ function ind(cv,o){const x=cv.getContext('2d'),R=Math.random,TP=Math.PI*2;let W=
    const segs=sc.lit.slice();if(!sc.done&&sc.hx!=null){const p=pipes[sc.i];segs.push({x1:p.x1,y1:p.y1,x2:sc.hx,y2:sc.hy})}pipesStroke(.75,segs,'0,205,160');
    if(!sc.done&&sc.hx!=null){const g=x.createRadialGradient(sc.hx,sc.hy,0,sc.hx,sc.hy,46);g.addColorStop(0,'rgba(255,255,255,.95)');g.addColorStop(.25,'rgba(0,205,160,.65)');g.addColorStop(1,'rgba(0,205,160,0)');x.fillStyle=g;x.beginPath();x.arc(sc.hx,sc.hy,46,0,TP);x.fill()}}
   let kmax=0;for(const h of hs){let d=Math.hypot(mx-h.x,my-h.y);if(sc&&!sc.done&&sc.hx!=null)d=Math.min(d,Math.hypot(sc.hx-h.x,sc.hy-h.y));const k=Math.max(0,1-d/150);kmax=Math.max(kmax,k);
-   const cc=h.f?(h.type=='steam'?'226,105,43':'0,184,148'):'255,255,255',rad=(h.f?36:20)+34*k,g=x.createRadialGradient(h.x,h.y,0,h.x,h.y,rad);
-   g.addColorStop(0,`rgba(${cc},${h.f?.8:.16+.08*Math.sin(T*3+h.x)+.6*k})`);g.addColorStop(1,`rgba(${cc},0)`);x.fillStyle=g;x.beginPath();x.arc(h.x,h.y,rad,0,TP);x.fill();
+   const cc=h.f?(h.type=='steam'?'226,105,43':'0,184,148'):'60,130,200',rad=(h.f?36:20)+34*k,g=x.createRadialGradient(h.x,h.y,0,h.x,h.y,rad);
+   g.addColorStop(0,`rgba(${cc},${h.f?.8:.22+.1*Math.sin(T*3+h.x)+.6*k})`);g.addColorStop(1,`rgba(${cc},0)`);x.fillStyle=g;x.beginPath();x.arc(h.x,h.y,rad,0,TP);x.fill();
    if(h.f){for(let i=0;i<3;i++){const u=(T*36+i*13)%40;x.fillStyle=`rgba(${cc},${.7*(1-u/40)})`;x.beginPath();x.arc(h.x+Math.sin(T*3+i)*3,h.y-8-u,2.2,0,TP);x.fill()}
     if(h.lab){x.font='bold 11px system-ui,Arial';x.lineWidth=3;x.strokeStyle='rgba(255,255,255,.85)';const lx=h.x>W-130?h.x-14-x.measureText(h.lab).width:h.x+14;x.strokeText(h.lab,lx,h.y-16);x.fillStyle=`rgb(${cc})`;x.fillText(h.lab,lx,h.y-16)}}}
   if(o.onDb)o.onDb(38+70*kmax);
@@ -299,7 +301,7 @@ function loadDemo(){const a=IND1.hs.filter(h=>h.rec).sort((x,y)=>x.rec.n-y.rec.n
  L=a.map(h=>{IMG[h.rec.key]=mkPhoto(h);return{...h.rec,dt:h.rec.date+' '+h.rec.time,status:'In Progress',type:h.type}});M.company='Demo Plant (simulated data)';regroup();
  MODE=L.some(l=>l.type=='air')?'air':'steam';document.querySelector('[name=mode][value='+MODE+']').checked=true;forms();tbl();draw();DEMO=true;
  $('#st').textContent='Draft report created from the leak-detection game (simulated data). Load your own journal to replace it.'}
-const IND1=ind($('#c1'),{alpha:1.6,host:$('#sp'),hot:true,still:RED,onDb:d=>{const e=$('#hd2');if(e)e.textContent=d>42?d.toFixed(1)+' dB':'— dB'},
+const IND1=ind($('#c1'),{alpha:2.6,tube:true,host:$('#sp'),hot:true,still:RED,onDb:d=>{const e=$('#hd2');if(e)e.textContent=d>42?d.toFixed(1)+' dB':'— dB'},
  onFound:(h,n,t)=>{if(!h.rec){h.rec=mkRec(h,n);h.lab=(h.type=='air'?'AIR ':'STEAM ')+h.rec.rate.toFixed(1)+' l/min'}$('#hd1').textContent=`Leaks found ${n} / ${t}`;
   if(n==t&&!$('#sp').classList.contains('scan')){$('#sp').classList.add('ready');$('#db').textContent='All leaks tagged. Tap the scanner to finish the scan.'}},
  onLine:(i,n)=>{$('#db').textContent=`Scanning line ${Math.min(i+1,n)} / ${n} …`},onScanDone:()=>finish()});
