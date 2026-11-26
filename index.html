@@ -46,6 +46,7 @@ table.s .sn{width:150px;overflow:hidden;white-space:nowrap;text-overflow:ellipsi
 #sp .hint{font-size:12px;color:#5d7a73;margin:0;max-width:300px;animation:up .8s 1.4s both}
 @keyframes pulse{50%{transform:scale(1.12)}}#sp.ready #go{animation:pulse 1s ease-in-out infinite}
 @media print{#c2{display:none!important}}
+#dl a{display:inline-block;background:var(--ac);color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:600;word-break:break-all}
 @keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}.fx{animation:up .5s both}
 body:not(.rdy) .ui{opacity:0}.ui{transition:opacity .9s .2s}
 .seg{position:relative;display:inline-grid;grid-template-columns:1fr 1fr;background:var(--in);border:1px solid var(--bd);border-radius:999px;padding:4px;--mc:#109B7E;--mg:rgba(16,155,126,.5)}
@@ -104,7 +105,7 @@ background:radial-gradient(ellipse at 50% 38%,#f1f7f5 0,#dbe9e5 55%,#bfd7cf 100%
 <div class="bar" id="tl" style="margin-bottom:8px">Tags <input id="tf" type="number" style="width:90px" placeholder="from"> to <input id="tt" type="number" style="width:90px" placeholder="to"> set as <button class="s" data-ty="air">Air</button><button class="s" data-ty="steam">Steam</button>
 &nbsp;|&nbsp; Section <select id="ts" style="width:auto;max-width:240px"></select> set as <button class="s" data-sy="air">Air</button><button class="s" data-sy="steam">Steam</button></div>
 <div class="tw"><table class="e" id="tb"></table></div></div>
-<div class="bar"><button id="pdf" disabled>Download PDF</button><button class="s" id="pr" disabled>Print / Save as PDF</button><span class="mu" id="ps"></span></div></div>
+<div class="bar"><button id="pdf" disabled>Download PDF</button><button class="s" id="pr" disabled>Print / Save as PDF</button><button class="s" id="xl" disabled>Download Excel</button><span class="mu" id="ps"></span></div><div id="dl" style="margin:10px 0"></div></div>
 <div id="wrap"><div id="rep"></div></div></div>
 <script>
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -190,7 +191,7 @@ function prInfo(){const a=L.filter(l=>l.type=='steam').map(l=>cal(l));if(!a.leng
 function build(){$('#lp').src=LOGO;$('#hl').src=LOGO;$('#sl').src=LOGO;const A=MODE=='air',PI=A?{}:prInfo();
  $('#nt').innerHTML=(A?`Compressed Air Cost = Electricity Rate × Specific Power × 1,000 (calculated automatically): <b>${fmt(air(),2)} BDT / 1,000 m³</b>`:`Steam Cost = Natural Gas Price ÷ Steam-to-Fuel Ratio × 1,000 (calculated automatically): <b>${fmt(scost(),2)} BDT / 1,000 kg</b> &nbsp;|&nbsp; Steam Density (saturated steam at the leak pressure): <b>${PI.DEN}</b>`)+` &nbsp;|&nbsp; Annual Operating Hours = Hours/Day × Days/Year: <b>${fmt(M.hrs,0)} h</b>`;
  const LM=L.filter(l=>l.type==MODE);
- if(!LM.length){$('#rep').innerHTML='';$('#pdf').disabled=$('#pr').disabled=true;$('#ps').textContent=L.length?`No ${A?'Air':'Steam'} leaks for this company; change the Type in the leak list.`:'';return}
+ if(!LM.length){$('#rep').innerHTML='';$('#pdf').disabled=$('#pr').disabled=$('#xl').disabled=true;$('#ps').textContent=L.length?`No ${A?'Air':'Steam'} leaks for this company; change the Type in the leak list.`:'';return}
  const secs=[...new Set(LM.map(l=>l.sec))],T=agg(LM),R=agg(LM.filter(l=>l.status=='Resolved')),ds=LM.map(l=>pd(l.dt)).filter(Boolean);
  const f=d=>d?`${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()}`:'';
  const tags=a=>{const n=a.map(l=>+l.tag).filter(x=>!isNaN(x));return n.length?Math.min(...n)+'–'+Math.max(...n):''};
@@ -230,7 +231,166 @@ function build(){$('#lp').src=LOGO;$('#hl').src=LOGO;$('#sl').src=LOGO;const A=M
  for(const x of secs){const a=LM.filter(l=>l.sec==x),g=agg(a);for(let i=0;i<a.length;i+=3)
   p.push((i?'':`<div class="sh">${esc(x)}</div><div class="ss">${g.n} leaks &nbsp;|&nbsp; ${fmt(g.r)} ltr/min &nbsp;|&nbsp; ${fmt(gv(g,'c'),2)} BDT per year &nbsp;|&nbsp; Leak Tags ${tags(a)}</div>`)+a.slice(i,i+3).map(card).join(''))}
  $('#rep').innerHTML=p.map((h,i)=>`<div class="page">${h}<div class="ft"><span>${esc(M.foot)}</span><span>Page ${i+1} / ${p.length}</span></div></div>`).join('');
- $('#pdf').disabled=$('#pr').disabled=false;$('#ps').textContent='Report ready: '+p.length+' pages'}
+ $('#pdf').disabled=$('#pr').disabled=$('#xl').disabled=false;$('#ps').textContent='Report ready: '+p.length+' pages'}
+/* ===== minimal XLSX writer (needs JSZip) ===== */
+const xe=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const CL=n=>{let s='';n++;while(n>0){const m=(n-1)%26;s=String.fromCharCode(65+m)+s;n=Math.floor((n-1)/26)}return s};
+class Sh{constructor(x,name){this.x=x;this.name=name;this.cells={};this.merges=[];this.cw=[];this.rh={};this.brk=[];this.pics=[];this.dv=[];this.rules={};this.grid=true;this.land=false;this.footer='';this.area='';this.freeze=false;this.filter='';this.nc=0}
+ set(ref,o,merge){const m=/^([A-Z]+)(\d+)$/.exec(ref);let c=0;for(const ch of m[1])c=c*26+ch.charCodeAt(0)-64;this.cells[ref]={r:+m[2],c,...o};if(merge)this.merges.push(merge)}
+ cellXml(ref,o){const st=` s="${this.x.st(o.s||{})}"`;
+  if(o.rich)return `<c r="${ref}"${st} t="inlineStr"><is>${o.rich.map(([t,b])=>`<r><rPr><rFont val="Arial"/>${b?'<b/>':''}<sz val="8"/></rPr><t xml:space="preserve">${xe(t)}</t></r>`).join('')}</is></c>`;
+  if(o.f!=null){const v=o.v;let t='',vx='';if(typeof v==='number'&&isFinite(v))vx=`<v>${v}</v>`;else{t=' t="str"';vx=`<v>${xe(v==null?'':v)}</v>`}return `<c r="${ref}"${st}${t}><f>${xe(o.f)}</f>${vx}</c>`}
+  if(o.v==null||o.v==='')return `<c r="${ref}"${st}/>`;
+  if(typeof o.v==='number')return `<c r="${ref}"${st}><v>${o.v}</v></c>`;
+  return `<c r="${ref}"${st} t="inlineStr"><is><t xml:space="preserve">${xe(o.v)}</t></is></c>`}
+ xml(){for(const r in this.rules){const q=this.rules[r];for(let c=1;c<=this.nc;c++){const ref=CL(c-1)+r,o=this.cells[ref]||(this.cells[ref]={r:+r,c});o.s={...(o.s||{}),bb:1,bc:q.bc,bw:q.bw}}}
+  const rows={};for(const k in this.cells){const c=this.cells[k];(rows[c.r]=rows[c.r]||[]).push([k,c])}for(const r in this.rh)rows[r]=rows[r]||[];
+  const sd=Object.keys(rows).map(Number).sort((a,b)=>a-b).map(r=>`<row r="${r}"${this.rh[r]?` ht="${this.rh[r]}" customHeight="1"`:''}>${rows[r].sort((a,b)=>a[1].c-b[1].c).map(([k,c])=>this.cellXml(k,c)).join('')}</row>`).join('');
+  const dv=this.dv.length?`<dataValidations count="${this.dv.length}">${this.dv.map(d=>`<dataValidation type="list" allowBlank="1" showInputMessage="1" showErrorMessage="1" sqref="${d[0]}"><formula1>${xe(d[1])}</formula1></dataValidation>`).join('')}</dataValidations>`:'';
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">`+
+  (this.land?'<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>':'')+
+  `<sheetViews><sheetView workbookViewId="0"${this.grid?'':' showGridLines="0"'}${this.first?' tabSelected="1"':''}>${this.freeze?'<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/>':''}</sheetView></sheetViews><sheetFormatPr defaultRowHeight="15"/>`+
+  (this.cw.length?`<cols>${this.cw.map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${w.toFixed(2)}" customWidth="1"/>`).join('')}</cols>`:'')+
+  `<sheetData>${sd}</sheetData>`+(this.filter?`<autoFilter ref="${this.filter}"/>`:'')+
+  (this.merges.length?`<mergeCells count="${this.merges.length}">${this.merges.map(m=>`<mergeCell ref="${m}"/>`).join('')}</mergeCells>`:'')+dv+
+  (this.land?'':'<printOptions horizontalCentered="1"/>')+`<pageMargins left="0.4" right="0.4" top="0.5" bottom="0.6" header="0.2" footer="0.25"/>`+
+  (this.land?'<pageSetup paperSize="9" orientation="landscape" fitToWidth="1" fitToHeight="0"/>':'<pageSetup paperSize="9" scale="100" orientation="portrait"/>')+
+  (this.footer?`<headerFooter><oddFooter>${xe('&L&8'+this.footer+'&R&8Page &P / &N')}</oddFooter></headerFooter>`:'')+
+  (this.brk.length?`<rowBreaks count="${this.brk.length}" manualBreakCount="${this.brk.length}">${this.brk.map(b=>`<brk id="${b}" max="16383" man="1"/>`).join('')}</rowBreaks>`:'')+
+  (this.pics.length?'<drawing r:id="rId1"/>':'')+'</worksheet>'}}
+class XL{constructor(){this.fonts=['<font><sz val="11"/><color rgb="FF000000"/><name val="Calibri"/></font>'];this.fills=['<fill><patternFill patternType="none"/></fill>','<fill><patternFill patternType="gray125"/></fill>'];this.borders=['<border><left/><right/><top/><bottom/><diagonal/></border>'];this.nfs=[];this.xfs=['<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'];this.sheets=[];this.imgs=[];this.imap={};this.cache={}}
+ sheet(n){const s=new Sh(this,n);s.first=!this.sheets.length;this.sheets.push(s);return s}
+ img(u){if(this.imap[u]!=null)return this.imap[u];const m=/^data:image\/(\w+);base64,(.*)$/.exec(u);this.imgs.push({ext:m[1]=='jpg'?'jpeg':m[1],b:m[2]});return this.imap[u]=this.imgs.length-1}
+ st(o){const k=JSON.stringify(o);if(k in this.cache)return this.cache[k];const ix=(a,v)=>{let i=a.indexOf(v);return i<0?a.push(v)-1:i};
+  const fo=ix(this.fonts,`<font>${o.b?'<b/>':''}${o.i?'<i/>':''}<sz val="${o.sz||8}"/><color rgb="FF${o.col||'000000'}"/><name val="Arial"/></font>`);
+  const fl=o.fill?ix(this.fills,`<fill><patternFill patternType="solid"><fgColor rgb="FF${o.fill}"/><bgColor indexed="64"/></patternFill></fill>`):0;
+  const bd=o.bb?ix(this.borders,`<border><left/><right/><top/><bottom style="${o.bw||'thin'}"><color rgb="FF${o.bc||'BBBBBB'}"/></bottom><diagonal/></border>`):0;
+  const nf=o.nf?164+ix(this.nfs,o.nf):0;
+  this.xfs.push(`<xf numFmtId="${nf}" fontId="${fo}" fillId="${fl}" borderId="${bd}" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="${o.h||'left'}" vertical="${o.v||'center'}"${o.wrap?' wrapText="1"':''}/></xf>`);return this.cache[k]=this.xfs.length-1}
+ async build(cb){const z=new JSZip(),N='xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"',RN='http://schemas.openxmlformats.org/officeDocument/2006/relationships',H='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+  const sx=this.sheets.map(s=>s.xml()),n=this.sheets.length;
+  z.file('[Content_Types].xml',H+`<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="jpeg" ContentType="image/jpeg"/><Default Extension="png" ContentType="image/png"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>`+
+   this.sheets.map((s,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`+(s.pics.length?`<Override PartName="/xl/drawings/drawing${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>`:'')).join('')+'</Types>');
+  z.file('_rels/.rels',H+`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${RN}/officeDocument" Target="xl/workbook.xml"/></Relationships>`);
+  z.file('xl/workbook.xml',H+`<workbook ${N} xmlns:r="${RN}"><bookViews><workbookView activeTab="0"/></bookViews><sheets>${this.sheets.map((s,i)=>`<sheet name="${xe(s.name)}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join('')}</sheets>`+
+   `<definedNames>${this.sheets.map((s,i)=>s.area?`<definedName name="_xlnm.Print_Area" localSheetId="${i}">${xe(s.area)}</definedName>`:'').join('')}</definedNames><calcPr calcId="191029" fullCalcOnLoad="1"/></workbook>`);
+  z.file('xl/_rels/workbook.xml.rels',H+`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${this.sheets.map((s,i)=>`<Relationship Id="rId${i+1}" Type="${RN}/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join('')}<Relationship Id="rId${n+1}" Type="${RN}/styles" Target="styles.xml"/></Relationships>`);
+  z.file('xl/styles.xml',H+`<styleSheet ${N}>${this.nfs.length?`<numFmts count="${this.nfs.length}">${this.nfs.map((f,i)=>`<numFmt numFmtId="${164+i}" formatCode="${xe(f)}"/>`).join('')}</numFmts>`:''}<fonts count="${this.fonts.length}">${this.fonts.join('')}</fonts><fills count="${this.fills.length}">${this.fills.join('')}</fills><borders count="${this.borders.length}">${this.borders.join('')}</borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="${this.xfs.length}">${this.xfs.join('')}</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`);
+  this.sheets.forEach((s,i)=>{z.file(`xl/worksheets/sheet${i+1}.xml`,sx[i]);if(!s.pics.length)return;
+   z.file(`xl/worksheets/_rels/sheet${i+1}.xml.rels`,H+`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${RN}/drawing" Target="../drawings/drawing${i+1}.xml"/></Relationships>`);
+   z.file(`xl/drawings/_rels/drawing${i+1}.xml.rels`,H+`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${s.pics.map((p,k)=>`<Relationship Id="rId${k+1}" Type="${RN}/image" Target="../media/image${p.i+1}.${this.imgs[p.i].ext}"/>`).join('')}</Relationships>`);
+   z.file(`xl/drawings/drawing${i+1}.xml`,H+`<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="${RN}">${s.pics.map((p,k)=>{const cx=Math.round(p.w*9525),cy=Math.round(p.h*9525);return `<xdr:oneCellAnchor><xdr:from><xdr:col>${p.col}</xdr:col><xdr:colOff>${Math.round(p.cx*9525)}</xdr:colOff><xdr:row>${p.row}</xdr:row><xdr:rowOff>${Math.round(p.cy*9525)}</xdr:rowOff></xdr:from><xdr:ext cx="${cx}" cy="${cy}"/><xdr:pic><xdr:nvPicPr><xdr:cNvPr id="${k+2}" name="Picture ${k+1}"/><xdr:cNvPicPr><a:picLocks noChangeAspect="1"/></xdr:cNvPicPr></xdr:nvPicPr><xdr:blipFill><a:blip r:embed="rId${k+1}"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill><xdr:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr></xdr:pic><xdr:clientData/></xdr:oneCellAnchor>`}).join('')}</xdr:wsDr>`)});
+  this.imgs.forEach((m,i)=>z.file(`xl/media/image${i+1}.${m.ext}`,m.b,{base64:true}));
+  return z.generateAsync({type:'blob',compression:'DEFLATE',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'},m=>{if(cb)cb(m.percent)})}}
+/* ===== Excel export: Report sheet (PDF-like, live formulas) + Data sheet (full leak list) ===== */
+const ser=s=>{const m=/(\d+)\.(\d+)\.(\d+)(?:\s+(\d+):(\d+):(\d+))?/.exec(s||'');return m?Date.UTC(+m[3],m[2]-1,+m[1],+(m[4]||0),+(m[5]||0),+(m[6]||0))/864e5+25569:''};
+const nfm=(d,u)=>'#,##0'+(d?'.'+'0'.repeat(d):'')+(u?`" ${u}"`:'');
+async function exportXlsx(cb){
+ const A=MODE=='air',TY=A?'Air':'Steam',LM=L.filter(l=>l.type==MODE);if(!LM.length)return null;
+ const X=new XL(),ws=X.sheet('Report'),wd=X.sheet('Data'),wn=X.sheet('Notes'),wt=A?null:X.sheet('Steam Table');
+ const D1=L.length+1,rg=c=>`Data!$${c}$2:$${c}$${D1}`,TEAL='109B7E',GREY='666666',TYQ=`"${TY}"`;
+ const W=A?[132,118,70,70,77.5,77.5,77.5,77.5]:[128,112,70,66,62,62,62,76,62],NC=W.length,LC=CL(NC-1),VC=A?'G':'H',RC=A?'D':'D';
+ ws.cw=W.map(p=>(p-5)/7);ws.grid=false;ws.nc=NC;ws.footer=M.foot;
+ const P=A?{co2:'Report!$G$12',sp:'Report!$G$13',er:'Report!$G$14',air:'Report!$B$14',hrs:'Report!$B$15'}:{gp:'Report!$H$12',ratio:'Report!$B$13',gcv:'Report!$H$13',hrs:'Report!$B$14',pman:'Report!$H$14',psrc:'Report!$H$15',co2:'Report!$H$16'};
+ const put=(r,o,m)=>ws.set(r,o,m),H=(r,t,m)=>put(r,{v:t,s:{b:1,col:TEAL,sz:9}},m),Lb=(r,t,m,w)=>put(r,{v:t,s:{wrap:w}},m);
+ const tot=agg(LM),res=agg(LM.filter(l=>l.status=='Resolved')),ds=LM.map(l=>ser(l.dt)).filter(Boolean),secs=[...new Set(LM.map(l=>l.sec))];
+ const tagR=a=>{const n=a.map(l=>+l.tag).filter(x=>!isNaN(x));return n.length?Math.min(...n)+'–'+Math.max(...n):''};
+ /* ---------- Data sheet ---------- */
+ const raw=['Leak Tag','Type','Section','Building / Place','Date / Time','Leakage Rate (ltr/min)','Pressure (bar g)','Photo File','Status'];
+ const ST="'Steam Table'!";
+ const calc=A?[['Volume per Year (m³)','v',r=>`IF($B${r}="Air",$F${r}*60*${P.hrs}/1000,"")`,3],['Energy per Year (kWh)','en',r=>`IF($B${r}="Air",$J${r}*${P.sp},"")`,3],['Cost per Year (BDT)','c',r=>`IF($B${r}="Air",$J${r}*Report!$B$14/1000,"")`,2],['CO2 per Year (Tons)','co',r=>`IF($B${r}="Air",$K${r}*${P.co2}/1000,"")`,3]]
+ :[['Pressure used (bar g)','pr',r=>`IF($B${r}="Steam",IF(${P.psrc}="Manual",${P.pman},IF(N($G${r})>0,$G${r},${P.pman})),"")`,1],['p abs (bar) [helper]','_pa',r=>`IF($B${r}="Steam",MIN(30,MAX(1,$J${r}+1.01325)),"")`,3],['Table row [helper]','_ix',r=>`IF($B${r}="Steam",MIN(16,MATCH($K${r},${ST}$A$2:$A$18,1)),"")`,0],
+  ['Steam Density (kg/m³)','den',r=>`IF($B${r}="Steam",1/EXP(LN(INDEX(${ST}$B$2:$B$18,$L${r}))+(LN($K${r})-LN(INDEX(${ST}$A$2:$A$18,$L${r})))/(LN(INDEX(${ST}$A$2:$A$18,$L${r}+1))-LN(INDEX(${ST}$A$2:$A$18,$L${r})))*(LN(INDEX(${ST}$B$2:$B$18,$L${r}+1))-LN(INDEX(${ST}$B$2:$B$18,$L${r})))),"")`,3],
+  ['Steam Loss per Year (kg)','st',r=>`IF($B${r}="Steam",$F${r}*60*${P.hrs}/1000*$M${r},"")`,3],['Boiler Gas Loss per Year (m³)','gas',r=>`IF($B${r}="Steam",$N${r}/${P.ratio},"")`,3],['Thermal Loss per Year (MJ)','th',r=>`IF($B${r}="Steam",$O${r}*${P.gcv},"")`,3],['Cost per Year (BDT)','c',r=>`IF($B${r}="Steam",$O${r}*${P.gp},"")`,2],['CO2 per Year (Tons)','co',r=>`IF($B${r}="Steam",$O${r}*${P.co2}/1000,"")`,3]];
+ if(A)calc[2][2]=r=>`IF($B${r}="Air",$J${r}*Report!$B$14/1000,"")`;
+ const KC={};calc.forEach((c,i)=>{KC[c[1]]=CL(9+i)});
+ wd.nc=9+calc.length;wd.cw=[9,9,24,34,19,14,11,15,13,...calc.map(c=>c[0].length>22?20:17)];wd.land=true;wd.freeze=true;wd.filter=`A1:${CL(8+calc.length)}${D1}`;
+ [...raw,...calc.map(c=>c[0])].forEach((h,i)=>wd.set(CL(i)+1,{v:h,s:{b:1,col:'FFFFFF',fill:TEAL,sz:9,h:'center',wrap:1}}));wd.rh[1]=32;
+ const paOf=l=>Math.min(30,Math.max(1,lp(l)+1.01325)),ixOf=l=>{const pa=paOf(l);let j=0;while(j<VT.length-1&&pa>=VT[j+1][0])j++;return Math.min(16,j+1)};
+ L.forEach((l,k)=>{const r=k+2,c=cal(l),mine=l.type==MODE,bl={col:'0000FF',sz:9};
+  wd.set('A'+r,{v:+l.tag||l.tag,s:bl});wd.set('B'+r,{v:l.type=='air'?'Air':'Steam',s:bl});wd.set('C'+r,{v:l.sec,s:bl});wd.set('D'+r,{v:[l.loc,l.place].filter(Boolean).join(' - '),s:bl});
+  wd.set('E'+r,{v:ser(l.dt),s:{...bl,nf:'dd.mm.yyyy hh:mm:ss'}});wd.set('F'+r,{v:l.rate,s:{...bl,nf:'#,##0.000'}});wd.set('G'+r,{v:isNaN(l.pr)?'':l.pr,s:{...bl,nf:'0.0'}});wd.set('H'+r,{v:l.photo||'',s:bl});wd.set('I'+r,{v:l.status,s:bl});
+  calc.forEach((cc,i)=>{const key=cc[1];let v='';if(mine)v=key=='_pa'?paOf(l):key=='_ix'?ixOf(l):c[key];wd.set(CL(9+i)+r,{f:cc[2](r),v,s:{sz:9,nf:nfm(cc[3])}})})});
+ wd.dv.push([`B2:B${D1}`,'"Air,Steam"'],[`I2:I${D1}`,'"In Progress,Resolved"']);
+ /* ---------- Report: header + contact ---------- */
+ ws.rh[1]=22;ws.rh[2]=6;put('A1',{v:A?'Air Leakage Report':'Steam Leakage Report',s:{b:1,col:TEAL,sz:13}});
+ put('C1',{v:Math.min(...ds),s:{b:1,col:TEAL,sz:10,nf:'"Begin: "dd.mm.yyyy'}},'C1:E1');put('F1',{v:Math.max(...ds),s:{b:1,col:TEAL,sz:10,nf:'"End: "dd.mm.yyyy'}},`F1:${LC}1`);ws.rules[1]={bc:'BBBBBB',bw:'thin'};
+ const aE='E';H('A3','Contact Data:');H('B3','Customer:','B3:D3');H(aE+'3','Auditor:',`${aE}3:${LC}3`);
+ [['Company:',M.company,M.audName],['Address:','',M.audAddr],['Contact:','',M.audContact],['Email:','',M.audEmail],['Phone:','',M.audPhone]].forEach((x,i)=>{const r=4+i;Lb('A'+r,x[0]);if(x[1])Lb('B'+r,x[1],`B${r}:D${r}`);Lb(aE+r,x[2],`${aE}${r}:${LC}${r}`);ws.rh[r]=14});ws.rh[3]=14;
+ Lb('A9','Logo:');ws.rh[9]=36;ws.rules[9]={bc:'BBBBBB',bw:'thin'};if(LOGO&&/^data:image\/(png|jpe?g)/.test(LOGO))ws.pics.push({i:X.img(LOGO),col:4,row:8,cx:2,cy:3,w:112,h:32});
+ ws.rh[10]=6;H('A11','Project Master Data:');ws.rh[11]=14;
+ const inp=(ref,v,nf,m)=>put(ref,{v,s:{nf}},m),inf=(ref,f,v,nf,m)=>put(ref,{f,v,s:{nf}},m),HRF=`${M.hpd}*${M.dpy}`;let r;
+ if(A){Lb('A12','Import Date:');inp('B12',ser(M.imp),'dd.mm.yyyy','B12:C12');Lb('D12','CO2 Emission:','D12:F12');inp('G12',M.co2,'0.000" kg / kWh"','G12:H12');
+  Lb('D13','Specific Power:','D13:F13');inp('G13',M.sp,'0.000" kWh / m³"','G13:H13');Lb('A14','Compressed Air Cost:');inf('B14','Report!$G$14*Report!$G$13*1000',air(),'#,##0.00" BDT / 1,000 m³"','B14:C14');
+  Lb('D14','Electricity Rate:','D14:F14');inp('G14',M.er,'0.00#" BDT / kWh"','G14:H14');Lb('A15','Annual Operating Hours per year:',null,1);inf('B15',HRF,M.hrs,'#,##0" h"','B15:C15');for(let k=12;k<=15;k++)ws.rh[k]=14;ws.rh[15]=24;r=15}
+ else{Lb('A12','Import Date:');inp('B12',ser(M.imp),'dd.mm.yyyy','B12:C12');Lb('D12','Natural Gas Price:','D12:G12');inp('H12',M.sgp,'0.00#" BDT / m³"','H12:I12');
+  Lb('A13','Steam-to-Fuel Ratio:');inp('B13',M.srt,'0.00#" kg steam / m³ gas"','B13:C13');Lb('D13','Gas Heating Value (GCV):','D13:G13');inp('H13',M.sgcv,'0.00#" MJ / m³"','H13:I13');
+  Lb('A14','Annual Operating Hours per year:',null,1);inf('B14',HRF,M.hrs,'#,##0" h"','B14:C14');Lb('D14','Steam Pressure (manual):','D14:G14');inp('H14',M.spr,'0.0" bar (g)"','H14:I14');
+  Lb('A15','Steam Cost:');inf('B15','Report!$H$12/Report!$B$13*1000',scost(),'#,##0.00" BDT / 1,000 kg"','B15:C15');Lb('D15','Pressure Source (Journal / Manual):','D15:G15');inp('H15',M.pm?'Manual':'Journal','@','H15:I15');ws.dv.push(['H15','"Journal,Manual"']);
+  Lb('D16','CO2 Emission (Natural Gas):','D16:G16');inp('H16',M.sco2,'0.00#" kg CO2 / m³"','H16:I16');for(let k=12;k<=16;k++)ws.rh[k]=14;ws.rh[14]=24;r=16}
+ ws.rules[r]={bc:'BBBBBB',bw:'thin'};
+ /* ---------- Results / Improvements ---------- */
+ const SC=A?[['Volume/Year (m³)','v',2],['Energy/Year (kWh)','en',2],['Cost/Year (BDT)','c',2],['CO2 (Tons)','co',3]]:[['Steam Loss/Year (kg)','st',0],['Thermal Loss/Year (MJ)','th',0],['Gas Loss/Year (m³)','gas',0],['Cost/Year (BDT)','c',2],['CO2 (Tons)','co',3]];
+ const RS=A?[['Cost per Year:','c',2,'BDT','Cost Saved per Year:'],['Energy per Year:','en',2,'kWh','Energy saved per Year:'],['Volume Per Year:','v',2,'m³','Saved Volume Per Year:'],['Total CO2 per Year:','co',3,'Tons','CO2 Saved per Year:']]
+ :[['Steam Loss per Year:','st',2,'kg','Steam Saved per Year:'],['Thermal Loss per Year:','th',2,'MJ','Thermal Energy Saved per Year:'],['Boiler Gas Loss per Year:','gas',2,'m³','Gas Saved per Year:'],['Cost per Year:','c',2,'BDT','Cost Saved per Year:'],['Total CO2 per Year:','co',3,'Tons','CO2 Saved per Year:']];
+ const hr=r+2,SR0=hr+2+RS.length+4,TR=SR0+secs.length;ws.rh[hr-1]=6;
+ H('A'+hr,'Results:');H('D'+hr,'Improvements:',`D${hr}:F${hr}`);H(LC+hr,'Relative %');ws.rh[hr]=16;
+ let q=hr+1;Lb('A'+q,'No. of Leakages:');put('B'+q,{f:`C${TR}`,v:tot.n,s:{nf:'#,##0'}},`B${q}:C${q}`);Lb('D'+q,'Number Resolved:',`D${q}:F${q}`);
+ put('G'+q,{f:`COUNTIFS(${rg('B')},${TYQ},${rg('I')},"Resolved")`,v:res.n,s:{nf:'#,##0'}},A?null:`G${q}:H${q}`);put(LC+q,{f:`IF(B${q}=0,0,G${q}/B${q})`,v:tot.n?res.n/tot.n:0,s:{nf:'0.0 %'}});
+ q++;Lb('A'+q,'Total Leakage Rate:');put('B'+q,{f:`TEXT(D${TR},"#,##0.000")&" ltr/min / "&TEXT(D${TR}*0.06,"#,##0.000")&" m³/h"`,v:`${fmt(tot.r)} ltr/min / ${fmt(tot.r*.06)} m³/h`,s:{}},`B${q}:C${q}`);
+ Lb('D'+q,'Saved Leakage Rate:',`D${q}:F${q}`);put('G'+q,{f:`SUMIFS(${rg('F')},${rg('B')},${TYQ},${rg('I')},"Resolved")`,v:res.r,s:{nf:nfm(3,'ltr/min')}},A?null:`G${q}:H${q}`);put(LC+q,{f:`IF(D${TR}=0,0,G${q}/D${TR})`,v:tot.r?res.r/tot.r:0,s:{nf:'0.0 %'}});
+ for(const [lab,k,d,u,sl] of RS){q++;const j=SC.findIndex(c=>c[1]==k);Lb('A'+q,lab);put('B'+q,{f:`${CL(4+j)}${TR}`,v:gv(tot,k),s:{nf:nfm(d,u)}},`B${q}:C${q}`);Lb('D'+q,sl,`D${q}:F${q}`);
+  put('G'+q,{f:`SUMIFS(${rg(KC[k])},${rg('B')},${TYQ},${rg('I')},"Resolved")`,v:gv(res,k),s:{nf:nfm(d,u)}},`G${q}:${LC}${q}`)}
+ for(let k=hr+1;k<=q;k++)ws.rh[k]=14;ws.rules[q]={bc:'BBBBBB',bw:'thin'};
+ /* ---------- Section summary ---------- */
+ ws.rh[q+1]=8;H('A'+(q+2),'Section-wise Summary:',`A${q+2}:${LC}${q+2}`);ws.rh[q+2]=16;const hd=q+3;
+ ['Section','Leak Tags','Leaks','Leakage (ltr/min)',...SC.map(c=>c[0])].forEach((h,i)=>ws.set(CL(i)+hd,{v:h,s:{b:1,col:'FFFFFF',fill:TEAL,h:i?'right':'left',wrap:1}}));ws.rh[hd]=A?26:36;
+ if(hd+1!=SR0)throw new Error('summary row mismatch');
+ const byS={};secs.forEach((s,i)=>{const rr=SR0+i,a=LM.filter(l=>l.sec==s),g=agg(a);byS[s]=g;const cond=`(${rg('C')}=$A${rr})*(${rg('B')}=${TYQ})`;
+  ws.set('A'+rr,{v:s,s:{bb:1}});ws.set('B'+rr,{f:`ROUND(1/SUMPRODUCT(MAX(${cond}/${rg('A')})),0)&"–"&SUMPRODUCT(MAX(${cond}*${rg('A')}))`,v:tagR(a),s:{h:'right',bb:1}});
+  ws.set('C'+rr,{f:`COUNTIFS(${rg('C')},$A${rr},${rg('B')},${TYQ})`,v:g.n,s:{h:'right',nf:'#,##0',bb:1}});ws.set('D'+rr,{f:`SUMIFS(${rg('F')},${rg('C')},$A${rr},${rg('B')},${TYQ})`,v:g.r,s:{h:'right',nf:'#,##0.000',bb:1}});
+  SC.forEach((c,j)=>ws.set(CL(4+j)+rr,{f:`SUMIFS(${rg(KC[c[1]])},${rg('C')},$A${rr},${rg('B')},${TYQ})`,v:gv(g,c[1]),s:{h:'right',nf:nfm(c[2]),bb:1}}));ws.rh[rr]=16});
+ const TF={fill:'E6F4F1',bb:1};ws.set('A'+TR,{v:'Total',s:{b:1,...TF}});ws.set('B'+TR,{v:'',s:TF});ws.set('C'+TR,{f:`SUM(C${SR0}:C${TR-1})`,v:tot.n,s:{b:1,h:'right',nf:'#,##0',...TF}});ws.set('D'+TR,{f:`SUM(D${SR0}:D${TR-1})`,v:tot.r,s:{b:1,h:'right',nf:'#,##0.000',...TF}});
+ SC.forEach((c,j)=>ws.set(CL(4+j)+TR,{f:`SUM(${CL(4+j)}${SR0}:${CL(4+j)}${TR-1})`,v:gv(tot,c[1]),s:{b:1,h:'right',nf:nfm(c[2]),...TF}}));ws.rh[TR]=16;
+ /* ---------- Leak cards ---------- */
+ ws.brk.push(TR+1);r=TR+2;const CD=A?[['Energy Consumption','en',3,'kWh'],['Volume Per Year','v',3,'m³'],['Cost per Year','c',2,'BDT'],['CO2 Emissions per Year','co',3,'Tons']]:[['Steam Pressure','pr',1,'bar (g)'],['Steam Loss per Year','st',3,'kg'],['Thermal Loss per Year','th',3,'MJ'],['Boiler Gas Loss per Year','gas',3,'m³'],['Cost per Year','c',2,'BDT'],['CO2 Emissions per Year','co',3,'Tons']];
+ const rowOf=new Map(L.map((l,k)=>[l,k+2])),PW=264,PH=198,photoW=W.slice(4).reduce((a,b)=>a+b,0),cKey=SC.findIndex(c=>c[1]=='c');
+ secs.forEach((s,si)=>{if(si>0)ws.brk.push(r-1);const a=LM.filter(l=>l.sec==s),g=byS[s],sr=SR0+si;
+  put('A'+r,{v:s,s:{b:1,col:TEAL,sz:13}},`A${r}:${LC}${r}`);ws.rh[r]=22;
+  put('A'+(r+1),{f:`C${sr}&" leaks  |  "&TEXT(D${sr},"#,##0.000")&" ltr/min  |  "&TEXT(${CL(4+cKey)}${sr},"#,##0.00")&" BDT per year  |  Leak Tags "&B${sr}`,v:`${g.n} leaks  |  ${fmt(g.r)} ltr/min  |  ${fmt(gv(g,'c'),2)} BDT per year  |  Leak Tags ${tagR(a)}`,s:{col:GREY}},`A${r+1}:${LC}${r+1}`);ws.rh[r+1]=16;ws.rules[r+1]={bc:TEAL,bw:'medium'};r+=2;
+  a.forEach((l,n)=>{if(n>0&&n%3==0)ws.brk.push(r-1);const dr=rowOf.get(l),c=cal(l);
+   put('A'+r,{f:`"LeakTag:  "&Data!$A${dr}`,v:'LeakTag:  '+l.tag,s:{b:1,col:TEAL,sz:10}},`A${r}:D${r}`);ws.rh[r]=18;
+   const rows=[['Building/Place:',`Data!$D${dr}`,undefined,[l.loc,l.place].filter(Boolean).join(' - ')],['Date/Time:',`Data!$E${dr}`,'dd.mm.yyyy hh:mm:ss',ser(l.dt)],['Leakage Rate:',`Data!$F${dr}`,nfm(3,'ltr/min'),l.rate],...CD.map(x=>[x[0]+':',`Data!$${KC[x[1]]}${dr}`,nfm(x[2],x[3]),gv(c,x[1])]),['Priority:',null]];
+   rows.forEach((x,j)=>{const rr=r+1+j;ws.set('A'+rr,{v:x[0],s:{b:1}});if(x[1])ws.set('B'+rr,{f:x[1],v:x[3],s:{nf:x[2],wrap:j==0}});ws.rh[rr]=j==0?29:17.5});
+   [['Repair under Pressure:','✕'],['Leaking Element:',''],['Spare Part:',''],['Measure:',''],['Solved on ...:',''],['Solved by ...:','']].forEach((x,j)=>{const rr=r+1+j;ws.set('C'+rr,{rich:[[x[0]+' ',1],[x[1],0]]},`C${rr}:D${rr}`)});
+   ws.set('C'+(r+7),{v:'Status:',s:{b:1}});ws.set('D'+(r+7),{f:`Data!$I${dr}`,v:l.status});
+   const cm=r+CD.length+5;ws.set('A'+cm,{v:'Comment:',s:{b:1}});ws.set('A'+(cm+1),{v:'Note:',s:{b:1}});
+   ws.set('E'+cm,{f:`IF(Data!$H${dr}="","","Photo: "&Data!$H${dr})`,v:l.photo?'Photo: '+l.photo:'',s:{i:1,col:GREY,sz:7,h:'right'}},`E${cm}:${LC}${cm}`);
+   ws.rh[cm]=15;ws.rh[cm+1]=15;ws.rh[cm+2]=8;ws.rules[cm+1]={bc:'BBBBBB',bw:'thin'};
+   if(IMG[l.key])ws.pics.push({i:X.img(IMG[l.key]),col:4,row:r,cx:(photoW-PW)/2,cy:2,w:PW,h:PH});
+   r+=CD.length+8})});
+ ws.area=`Report!$A$1:$${LC}$${r}`;
+ /* ---------- Notes + Steam Table ---------- */
+ wn.cw=[4,120];wn.grid=false;
+ const notes=[['HOW TO USE THIS WORKBOOK',1],['1. Change the input cells on the Report sheet (page 1): '+(A?'CO2 Emission, Specific Power and Electricity Rate. Compressed Air Cost and Annual Operating Hours are calculated.':'Natural Gas Price, Steam-to-Fuel Ratio, Gas Heating Value, Steam Pressure (manual), Pressure Source and CO2 Emission. Steam Cost and Annual Operating Hours are calculated.'),0],
+  ['2. The Data sheet lists every leak of the selected company (Air and Steam). Blue = typed values, black = formulas. Edit Type, Section, Rate, Pressure or Status there and the Report totals recalculate.',0],
+  ['3. Formulas: '+(A?'Volume = Rate × 60 × Hours ÷ 1000; Energy = Volume × Specific Power; Cost = Volume × Compressed Air Cost ÷ 1000; CO2 = Energy × CO2 Emission ÷ 1000.':'Steam Loss = Rate × 60 × Hours ÷ 1000 × Steam Density; Gas = Steam ÷ Ratio; Thermal = Gas × GCV; Cost = Gas × Price; CO2 = Gas × CO2 factor ÷ 1000.'),0],
+  ['4. Set a leak Status to "Resolved" on the Data sheet to fill the Improvements block.',0],
+  ['5. Leak cards, photos and section rows on the Report sheet were created for the leaks listed at export time. Adding rows to the Data sheet extends the Data sheet only.',0]];
+ if(!A)notes.push(['6. Steam Density comes from the Steam Table sheet (saturated steam, log interpolation at leak pressure + 1.013 bar). The table values are from standard steam tables as known to the author; please verify.',0]);
+ notes.forEach((n,i)=>wn.set('B'+(i+2),{v:n[0],s:{b:n[1],sz:n[1]?11:10,col:n[1]?TEAL:'000000',wrap:1}}));
+ if(wt){wt.cw=[16,18];wt.set('A1',{v:'P abs (bar)',s:{b:1,col:'FFFFFF',fill:TEAL}});wt.set('B1',{v:'vg (m³/kg)',s:{b:1,col:'FFFFFF',fill:TEAL}});VT.forEach((x,i)=>{wt.set('A'+(i+2),{v:x[0],s:{}});wt.set('B'+(i+2),{v:x[1],s:{nf:'0.0000'}})})}
+ return X.build(cb)}
+
+function offer(blob,name,label){if(window.__ou)URL.revokeObjectURL(window.__ou);const u=window.__ou=URL.createObjectURL(blob);$('#dl').innerHTML=`<a href="${u}" download="${esc(name)}">⬇ Tap here to save ${label}: ${esc(name)} (${(blob.size/1048576).toFixed(1)} MB)</a>`;return u}
+async function needZip(){if(typeof JSZip!=='undefined')return true;await new Promise(res=>{const q=document.createElement('script');q.src='https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';q.onload=res;q.onerror=res;document.head.appendChild(q)});return typeof JSZip!=='undefined'}
+$('#xl').onclick=async()=>{const b=$('#xl'),st=$('#ps'),lab=b.textContent;b.disabled=true;$('#dl').innerHTML='';st.textContent='Creating Excel…';
+ try{if(!(await needZip()))throw new Error('the zip library could not be loaded (internet needed once)');b.textContent='Creating Excel… 0%';
+  const blob=await exportXlsx(p=>{b.textContent='Creating Excel… '+Math.round(p)+'%'});if(!blob){st.textContent='No leaks of this report type to export.';return}
+  const name=(M.company||'Leak_Report').replace(/[^\w]+/g,'_')+'_'+(MODE=='air'?'Air':'Steam')+'_Leak_Report.xlsx',dl=await window.claude?.use?.('downloads');
+  if(dl){await dl.save({filename:name,data:blob})}else{const u=offer(blob,name,'Excel'),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove()}
+  st.textContent='Excel ready ('+(MODE=='air'?'Report + Data sheets, Air':'Report + Data sheets, Steam')+'). If the download did not start, tap the green button below.'}
+ catch(e){console.error(e);const m='Excel could not be created: '+(e&&e.message||e);st.textContent=m;alert(m)}b.textContent=lab;b.disabled=false};
 $('#pr').onclick=()=>window.print();
 $('#pdf').onclick=async()=>{const b=$('#pdf'),pg=[...document.querySelectorAll('.page')],st=$('#ps');b.disabled=true;window.__busy=true;
  const box=document.createElement('div');box.style.cssText='position:absolute;left:-10000px;top:0;width:794px;background:#fff';document.body.appendChild(box);
@@ -240,7 +400,7 @@ $('#pdf').onclick=async()=>{const b=$('#pdf'),pg=[...document.querySelectorAll('
    const cv=await html2canvas(c,{scale:1.6,backgroundColor:'#ffffff',useCORS:true,logging:false,width:794,height:1122,windowWidth:794,windowHeight:1122,scrollX:0,scrollY:0});
    if(i)doc.addPage('a4','portrait');doc.addImage(cv.toDataURL('image/jpeg',.88),'JPEG',0,0,210,297,undefined,'FAST')}
   const blob=doc.output('blob'),name=(M.company||'Leak_Report').replace(/[^\w]+/g,'_')+'_'+(MODE=='air'?'Air':'Steam')+'_Leak_Report.pdf',dl=await window.claude?.use?.('downloads');
-  if(dl){await dl.save({filename:name,data:blob});st.textContent='PDF ready'}else{const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),60000);st.textContent='PDF ready ('+pg.length+' pages, A4)'}}
+  if(dl){await dl.save({filename:name,data:blob});st.textContent='PDF ready'}else{const u=offer(blob,name,'PDF'),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();st.textContent='PDF ready ('+pg.length+' pages, A4). If the download did not start, tap the green button below.'}}
  catch(e){st.textContent=(e&&e.code=='declined')?'Download cancelled':'PDF could not be created; use "Print / Save as PDF"'}
  box.remove();window.__busy=false;b.disabled=false};
 function ind(cv,o){const x=cv.getContext('2d'),R=Math.random,TP=Math.PI*2;let W=0,H=0,pipes=[],pts=[],gears=[],devs=[],hs=[],rip=[],mx=-999,my=-999,boost=0,run=false,last=0,T=0,fr=0,found=0,dark=false,sc=null;
